@@ -1,26 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Control</title></head>
 <body>
-  <button id="toggle">Start</button>
+  <button id="laser-button">🎯</button>
 
   <style>
     body {
       margin: 0;
       height: 100vh;
+      background: #f0f0f0;
       display: flex;
-      justify-content: center;
       align-items: center;
-      background: #f8f8f8;
+      justify-content: center;
     }
-    #toggle {
-      padding: 2em 4em;
-      font-size: 1.5em;
+    #laser-button {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      font-size: 3rem;
+      border: none;
+      background: #4caf50;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    #laser-button:active {
+      background: #388e3c;
     }
   </style>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="js/control.js"></script>
 </body>
-
-</html>
