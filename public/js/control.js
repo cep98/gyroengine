@@ -21,7 +21,8 @@ button.addEventListener("touchstart", (e) => {
     socket.emit("gyroData", {
       isStart: true,
       alpha: center.alpha,
-      beta: center.beta
+      beta: center.beta,
+      gamma: 0 // wichtig: immer gamma mitschicken
     });
 
     window.removeEventListener("deviceorientation", calibrate);
@@ -39,6 +40,7 @@ window.addEventListener("deviceorientation", (e) => {
   socket.emit("gyroData", {
     isStart: false,
     alpha: e.alpha,
-    beta: e.beta
+    beta: e.beta,
+    gamma: e.gamma // → wird für admin mitgesendet
   });
 });
