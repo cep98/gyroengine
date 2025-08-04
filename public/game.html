@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Laserpointer Game</title>
+    <title>Laserpointer</title>
     <style>
         body {
             margin: 0;
@@ -11,14 +11,15 @@
         #pointer {
             width: 30px;
             height: 30px;
-            background: radial-gradient(circle, red 20%, rgba(255,50,50,0.3) 70%);
+            background: radial-gradient(circle, red 40%, rgba(255,0,0,0.3) 80%);
             border-radius: 50%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            filter: drop-shadow(0 0 10px red);
+            filter: drop-shadow(0 0 15px red);
             will-change: transform;
+            transition: transform 0.1s linear;
         }
         #debug {
             position: absolute;
@@ -35,7 +36,7 @@
 </head>
 <body>
     <div id="pointer"></div>
-    <div id="debug">Initialisiere...</div>
+    <div id="debug">Verbinde mit Server...</div>
 
     <script>
         const pointer = document.getElementById("pointer");
@@ -49,8 +50,8 @@
         let sensitivity = window.innerWidth / (MAX_ANGLE * 2);
 
         // WebSocket
-        socket.onopen = () => debug.textContent = "Verbunden | Warte auf Daten";
-        socket.onerror = (e) => debug.textContent = `Fehler: ${e.message}`;
+        socket.onopen = () => debug.textContent = "VERBUNDEN | Warte auf Gyro-Daten";
+        socket.onerror = (e) => debug.textContent = "FEHLER: " + e.message;
         
         socket.onmessage = (e) => {
             try {
@@ -58,46 +59,39 @@
                 
                 if (data.reset) {
                     targetX = targetY = 0;
-                    debug.textContent = "Zentriert | Warte auf Daten";
+                    debug.textContent = "ZENTRIERT | Warte auf Daten";
                 } 
-                else if (data.alpha !== undefined) {
-                    // Richtungskorrektur und Begrenzung
+                else if (typeof data.alpha === 'number') {
+                    // Richtungskorrektur
                     let horizontalAngle = (data.alpha > 180 ? data.alpha - 360 : data.alpha) * -1;
                     horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle));
                     
-                    let verticalAngle = (data.beta || 0) * -1; // Fallback für beta
+                    let verticalAngle = (data.beta || 0) * -1;
                     verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, verticalAngle));
                     
                     // Positionsberechnung
                     targetX = horizontalAngle * sensitivity;
                     targetY = verticalAngle * sensitivity * 0.8;
                     
-                    debug.innerHTML = `
-                        Alpha: ${horizontalAngle.toFixed(1)}°<br>
-                        Beta: ${verticalAngle.toFixed(1)}°<br>
-                        X: ${targetX.toFixed(1)}px | Y: ${targetY.toFixed(1)}px
-                    `;
+                    debug.innerHTML = `X: ${targetX.toFixed(1)}px | Y: ${targetY.toFixed(1)}px`;
                 }
             } catch (err) {
-                debug.textContent = `Datenfehler: ${err.message}`;
-                console.error(err);
+                console.error("Datenfehler:", err);
             }
         };
 
-        // Animation (korrigiert)
-        function animate() {
-            // Glättung
-            currentX += (targetX - currentX) * 0.2;
-            currentY += (targetY - currentY) * 0.2;
+        // Animation (60 FPS)
+        function updatePosition() {
+            currentX += (targetX - currentX) * 0.3;
+            currentY += (targetY - currentY) * 0.3;
             
-            // Transform anwenden (KORREKTUR: Komma durch Leerzeichen ersetzt)
-            pointer.style.transform = `translate(calc(-50% + ${currentX}px) translate(calc(-50% + ${currentY}px)`;
+            pointer.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`;
             
-            requestAnimationFrame(animate);
+            requestAnimationFrame(updatePosition);
         }
-        animate();
+        updatePosition();
 
-        // Fenstergrößenanpassung
+        // Responsive
         window.addEventListener('resize', () => {
             sensitivity = window.innerWidth / (MAX_ANGLE * 2);
         });
