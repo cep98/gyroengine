@@ -3,14 +3,16 @@ import { socket } from "./socket.js";
 const container = document.getElementById("device-list");
 const gameStatus = document.getElementById("game-status");
 const smoothingSlider = document.getElementById("smoothing-slider");
-const smoothingLabel = document.getElementById("smooth-value");
+const smoothingLabel = document.getElementById("smoothing-label");
 
 const devices = {};
 const gameClients = new Set();
 
+// Glättungsregler
 smoothingSlider.addEventListener("input", () => {
-  const value = parseInt(smoothingSlider.value, 10);
-  socket.emit("updateConfig", { smoothing: value });
+  const percent = Number(smoothingSlider.value);
+  smoothingLabel.textContent = percent + "%";
+  socket.emit("updateConfig", { smoothing: percent });
 });
 
 function createDeviceBlock(id) {
