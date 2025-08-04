@@ -36,62 +36,65 @@
             font-family: monospace;
             padding: 10px;
             border-radius: 4px;
+            white-space: pre-wrap;
         }
-        #connectionStatus {
+        .status {
             display: inline-block;
-            width: 15px;
-            height: 15px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: gray;
-            margin-right: 10px;
+            margin-right: 8px;
         }
-        .connected { background: #4CAF50 !important; }
-        .error { background: #f44336 !important; }
+        .connected { background: #4CAF50; }
+        .disconnected { background: #f44336; }
     </style>
 </head>
 <body>
-    <h1><span id="connectionStatus"></span>Gyro Data Monitor</h1>
+    <h1><span id="statusLed" class="status disconnected"></span>Gyro Monitor</h1>
     
     <div class="panel">
         <h3>Echtzeit-Daten</h3>
         <div>
-            <label>Beta (Vor/Zurück):</label>
+            <label>Alpha (Horizontal):</label>
+            <div class="bar-container">
+                <div id="alphaBar" class="bar"></div>
+            </div>
+            <span id="alphaValue">0°</span>
+        </div>
+        <div>
+            <label>Beta (Vertikal):</label>
             <div class="bar-container">
                 <div id="betaBar" class="bar"></div>
             </div>
             <span id="betaValue">0°</span>
         </div>
-        <div>
-            <label>Gamma (Links/Rechts):</label>
-            <div class="bar-container">
-                <div id="gammaBar" class="bar"></div>
-            </div>
-            <span id="gammaValue">0°</span>
-        </div>
     </div>
     
     <div class="panel">
-        <h3>Datenprotokoll</h3>
-        <div id="dataLog">Verbindung wird hergestellt...</div>
+        <h3>Datenstrom</h3>
+        <div id="dataLog">Initialisiere WebSocket...</div>
     </div>
 
     <script>
         const socket = new WebSocket("wss://gyroengine.onrender.com");
-        const statusLed = document.getElementById("connectionStatus");
+        const statusLed = document.getElementById("statusLed");
+        const alphaBar = document.getElementById("alphaBar");
         const betaBar = document.getElementById("betaBar");
-        const gammaBar = document.getElementById("gammaBar");
+        const alphaValue = document.getElementById("alphaValue");
         const betaValue = document.getElementById("betaValue");
-        const gammaValue = document.getElementById("gammaValue");
         const dataLog = document.getElementById("dataLog");
+
+        // Konfiguration
+        const MAX_ANGLE = 20;
 
         // WebSocket-Events
         socket.onopen = () => {
-            statusLed.className = "connected";
+            statusLed.className = "status connected";
             logMessage("VERBUNDEN MIT SERVER");
         };
 
         socket.onerror = (err) => {
-            statusLed.className = "error";
+            statusLed.className = "status disconnected";
             logMessage(`FEHLER: ${err.message || "Keine Verbindung"}`);
         };
 
@@ -100,41 +103,52 @@
                 const data = JSON.parse(e.data);
                 
                 if (data.reset) {
-                    logMessage("RESET: Pointer zentriert");
+                    logMessage("--- POINTER ZENTRIERT ---");
+                    updateBars(0, 0);
                 }
-                else if (data.beta !== undefined) {
-                    // Balken aktualisieren (-90° bis +90°)
-                    updateBar(betaBar, data.beta, 90);
-                    updateBar(gammaBar, data.gamma, 90);
+                else if (data.alpha !== undefined) {
+                    // Alpha zu -180° bis 180° konvertieren
+                    let alpha = (data.alpha > 180) ? data.alpha - 360 : data.alpha;
+                    alpha = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, alpha));
                     
-                    // Werte anzeigen
-                    betaValue.textContent = `${data.beta.toFixed(1)}°`;
-                    gammaValue.textContent = `${data.gamma.toFixed(1)}°`;
+                    // Beta begrenzen
+                    const beta = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, data.beta));
                     
-                    // Protokoll
-                    logMessage(`BETA: ${data.beta.toFixed(1)}° | GAMMA: ${data.gamma.toFixed(1)}°`);
+                    updateBars(alpha, beta);
+                    logMessage(`ALPHA: ${alpha.toFixed(1)}° | BETA: ${beta.toFixed(1)}°`);
                 }
             } catch (err) {
-                logMessage(`PARSING-FEHLER: ${err}`);
+                logMessage(`PARSING-FEHLER: ${err.message}`);
             }
         };
 
-        function updateBar(bar, value, max) {
-            const percent = ((value + max) / (max * 2)) * 100;
-            bar.style.width = `${percent}%`;
+        function updateBars(alpha, beta) {
+            // Alpha-Balken (Horizontal)
+            const alphaPercent = ((alpha + MAX_ANGLE) / (MAX_ANGLE * 2)) * 100;
+            alphaBar.style.width = `${alphaPercent}%`;
+            alphaValue.textContent = `${alpha.toFixed(1)}°`;
             
-            // Farbe bei Extremwerten ändern
-            if (Math.abs(value) > max * 0.8) {
-                bar.style.background = "linear-gradient(90deg, #FF5722, #F44336)";
+            // Beta-Balken (Vertikal)
+            const betaPercent = ((beta + MAX_ANGLE) / (MAX_ANGLE * 2)) * 100;
+            betaBar.style.width = `${betaPercent}%`;
+            betaValue.textContent = `${beta.toFixed(1)}°`;
+            
+            // Farben bei Extremwerten
+            if (Math.abs(alpha) > MAX_ANGLE * 0.9) {
+                alphaBar.style.background = "linear-gradient(90deg, #FF9800, #FF5722)";
             } else {
-                bar.style.background = "linear-gradient(90deg, #4CAF50, #8BC34A)";
+                alphaBar.style.background = "linear-gradient(90deg, #4CAF50, #8BC34A)";
+            }
+            
+            if (Math.abs(beta) > MAX_ANGLE * 0.9) {
+                betaBar.style.background = "linear-gradient(90deg, #FF9800, #FF5722)";
             }
         }
 
         function logMessage(msg) {
             const now = new Date();
-            const timestamp = now.toLocaleTimeString();
-            dataLog.innerHTML += `[${timestamp}] ${msg}<br>`;
+            const timeStr = now.toLocaleTimeString();
+            dataLog.innerHTML += `[${timeStr}] ${msg}\n`;
             dataLog.scrollTop = dataLog.scrollHeight;
         }
     </script>
