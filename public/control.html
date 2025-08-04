@@ -10,10 +10,12 @@
             touch-action: none;
             -webkit-user-select: none;
             user-select: none;
+            background: #f0f0f0;
         }
         #data {
             margin-top: 20px;
             color: #666;
+            font-size: 14px;
         }
         #activateArea {
             width: 150px;
@@ -27,6 +29,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
         }
         #activateArea:active {
             background: #45a049;
@@ -36,10 +39,10 @@
 </head>
 <body>
     <h1>Gyro Controller</h1>
-    <p>Halte den Kreis gedrückt, um den Laserpointer zu steuern</p>
+    <p>Halte den Kreis gedrückt und neige dein Gerät</p>
     
     <div id="activateArea">DRÜCKEN & HALTEN</div>
-    <div id="data">Gyroskop wird initialisiert...</div>
+    <div id="data">Warte auf Gyroskop...</div>
 
     <script>
         const socket = new WebSocket("wss://gyroengine.onrender.com");
@@ -48,16 +51,16 @@
         let isButtonPressed = false;
         let isGyroReady = false;
 
-        // Gyroskop-Freigabe (iOS)
+        // Gyroskop-Freigabe
         function requestGyroPermission() {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
                         if (response === 'granted') {
                             startGyro();
-                            dataDiv.textContent = "Bewege dein Handy!";
+                            dataDiv.textContent = "Bereit! Halte den Button gedrückt";
                         } else {
-                            dataDiv.textContent = "Gyroskop blockiert - Bitte erlauben";
+                            dataDiv.textContent = "Gyroskop blockiert – Bitte erlauben";
                         }
                     })
                     .catch(console.error);
@@ -70,18 +73,18 @@
         function startGyro() {
             window.addEventListener("deviceorientation", (e) => {
                 if (isButtonPressed && socket.readyState === WebSocket.OPEN) {
-                    const data = {
-                        beta: e.beta,
-                        gamma: e.gamma,
+                    socket.send(JSON.stringify({
+                        alpha: e.alpha,  // Horizontale Bewegung (0-360°)
+                        beta: e.beta,    // Vertikale Bewegung (-180° bis 180°)
                         timestamp: Date.now()
-                    };
-                    socket.send(JSON.stringify(data));
+                    }));
                 }
             });
             isGyroReady = true;
+            dataDiv.textContent = "Gyroskop aktiviert";
         }
 
-        // Touch/Maus-Events
+        // Input-Events
         activateArea.addEventListener("mousedown", startPress);
         activateArea.addEventListener("mouseup", endPress);
         activateArea.addEventListener("touchstart", startPress, {passive: true});
@@ -98,8 +101,8 @@
         }
 
         // Verbindungsstatus
-        socket.onopen = () => dataDiv.textContent = "Bereit - Halte den Kreis gedrückt";
-        socket.onerror = () => dataDiv.textContent = "Verbindungsfehler!";
+        socket.onopen = () => dataDiv.textContent += " | Verbunden";
+        socket.onerror = () => dataDiv.textContent += " | Verbindungsfehler";
     </script>
 </body>
 </html>
