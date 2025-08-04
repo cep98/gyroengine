@@ -2,9 +2,8 @@ import { requestGyroPermission } from "../lib/gyro-utils.js";
 import { socket } from "./socket.js";
 
 let sending = false;
-let center = { alpha: 0, beta: 0 };
+let center = { beta: 0, gamma: 0 };
 
-// Gyro-Freigabe beim Start einholen
 (async () => {
   await requestGyroPermission();
 })();
@@ -16,16 +15,13 @@ button.addEventListener("touchstart", (e) => {
   sending = true;
 
   const calibrate = (e) => {
-    center.alpha = e.alpha ?? 0;
     center.beta = e.beta ?? 0;
+    center.gamma = e.gamma ?? 0;
 
     socket.emit("gyroData", {
-      alpha: center.alpha,
+      isStart: true,
       beta: center.beta,
-      gamma: 0,
-      dirX: 0,
-      dirY: 0,
-      isStart: true
+      gamma: center.gamma
     });
 
     window.removeEventListener("deviceorientation", calibrate);
@@ -40,17 +36,9 @@ button.addEventListener("touchend", () => {
 window.addEventListener("deviceorientation", (e) => {
   if (!sending) return;
 
-  const delta = {
-    x: Math.sin((e.alpha - center.alpha) * Math.PI / 180),
-    y: -Math.sin((e.beta - center.beta) * Math.PI / 180)
-  };
-
   socket.emit("gyroData", {
-    alpha: e.alpha,
+    isStart: false,
     beta: e.beta,
-    gamma: e.gamma,
-    dirX: delta.x,
-    dirY: delta.y,
-    isStart: false
+    gamma: e.gamma
   });
 });
