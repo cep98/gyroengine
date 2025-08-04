@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Laserpointer Game</title>
+    <title>Laserpointer</title>
     <style>
         body {
             margin: 0;
@@ -11,7 +11,7 @@
         #pointer {
             width: 30px;
             height: 30px;
-            background: radial-gradient(circle, red 20%, transparent 70%);
+            background: radial-gradient(circle, red 20%, rgba(255,50,50,0.3) 70%);
             border-radius: 50%;
             position: absolute;
             top: 50%;
@@ -19,6 +19,7 @@
             transform: translate(-50%, -50%);
             filter: drop-shadow(0 0 10px red);
             transition: transform 0.05s linear;
+            will-change: transform;
         }
         #debug {
             position: absolute;
@@ -29,12 +30,13 @@
             padding: 10px;
             border-radius: 5px;
             font-family: monospace;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div id="pointer"></div>
-    <div id="debug">Verbinde mit Server...</div>
+    <div id="debug">Initialisiere...</div>
 
     <script>
         const pointer = document.getElementById("pointer");
@@ -42,14 +44,19 @@
         const socket = new WebSocket("wss://gyroengine.onrender.com");
 
         // Einstellungen
-        const SENSITIVITY = 4;
-        const SMOOTHING = 0.2;
+        const MAX_ANGLE = 20; // Maximale Neigung in Grad
         let targetX = 0, targetY = 0;
         let currentX = 0, currentY = 0;
 
+        // Bildschirmgröße dynamisch anpassen
+        function calculateSensitivity() {
+            return Math.min(window.innerWidth, window.innerHeight) / (MAX_ANGLE * 2);
+        }
+        let sensitivity = calculateSensitivity();
+
         // WebSocket
-        socket.onopen = () => debug.textContent = "VERBUNDEN | Warte auf Gyro-Daten";
-        socket.onerror = (e) => debug.textContent = "FEHLER: " + e.message;
+        socket.onopen = () => debug.textContent = "Verbunden | Warte auf Daten";
+        socket.onerror = (e) => debug.textContent = `Fehler: ${e.message}`;
         
         socket.onmessage = (e) => {
             try {
@@ -57,31 +64,45 @@
                 
                 if (data.reset) {
                     targetX = targetY = 0;
-                    debug.textContent = "ZENTRIERT | Warte auf Gyro-Daten";
+                    debug.textContent = "Zentriert | Warte auf Daten";
                 } 
-                else if (data.beta !== undefined) {
-                    targetX = data.gamma * SENSITIVITY;
-                    targetY = data.beta * SENSITIVITY * 0.8;
-                    debug.innerHTML = `X: ${targetX.toFixed(1)} | Y: ${targetY.toFixed(1)}<br>`;
+                else if (data.alpha !== undefined) {
+                    // Alpha (0-360°) zu -20° bis +20° konvertieren
+                    let horizontalAngle = (data.alpha > 180) ? data.alpha - 360 : data.alpha;
+                    horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle));
+                    
+                    // Beta (-180° bis 180°) begrenzen
+                    const verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, data.beta));
+                    
+                    // Zielposition berechnen
+                    targetX = horizontalAngle * sensitivity;
+                    targetY = verticalAngle * sensitivity * 0.8;
+                    
+                    debug.innerHTML = `
+                        Alpha: ${horizontalAngle.toFixed(1)}°<br>
+                        Beta: ${verticalAngle.toFixed(1)}°<br>
+                        X: ${targetX.toFixed(1)}px | Y: ${targetY.toFixed(1)}px
+                    `;
                 }
             } catch (err) {
-                console.error("Datenfehler:", err);
+                debug.textContent = `Datenfehler: ${err.message}`;
             }
         };
 
-        // Animation
+        // Glatte Animation
         function animate() {
-            currentX += (targetX - currentX) * SMOOTHING;
-            currentY += (targetY - currentY) * SMOOTHING;
+            currentX += (targetX - currentX) * 0.2;
+            currentY += (targetY - currentY) * 0.2;
             
-            pointer.style.transform = `
-                translate(calc(-50% + ${currentX}px), 
-                         calc(-50% + ${currentY}px))
-            `;
-            
+            pointer.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)`;
             requestAnimationFrame(animate);
         }
         animate();
+
+        // Bei Fenstergrößenänderung neu berechnen
+        window.addEventListener('resize', () => {
+            sensitivity = calculateSensitivity();
+        });
     </script>
 </body>
 </html>
