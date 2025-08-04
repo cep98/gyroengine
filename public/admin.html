@@ -1,50 +1,25 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Admin</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-
-    .device {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-
-    .bar {
-      height: 10px;
-      background: #4caf50;
-      margin: 2px 0 8px;
-      transition: width 0.2s, background 0.2s;
-    }
-
-    .label {
-      font-size: 0.9em;
-      color: #555;
-    }
-
-    #smoothing {
-      width: 300px;
-    }
+    body { font-family: sans-serif; padding: 20px; }
+    .device { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
+    .bar { height: 10px; margin-top: 4px; }
+    .label { margin-top: 6px; }
   </style>
 </head>
 <body>
-  <h1>Live Gyro Monitor</h1>
+  <h2>Admin Panel</h2>
 
-  <div style="margin-bottom: 1em;">
-    <label for="smoothing">Glättung: <span id="smooth-value">0%</span></label><br>
-    <input type="range" id="smoothing" min="0" max="100" value="0" />
-  </div>
+  <label for="smoothing-slider">Glättung: <span id="smoothing-label">0%</span></label><br>
+  <input type="range" id="smoothing-slider" min="0" max="100" value="0" /><br><br>
 
   <div id="game-status"></div>
   <div id="device-list"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="/js/admin.js"></script>
 </body>
 </html>
