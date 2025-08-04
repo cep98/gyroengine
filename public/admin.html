@@ -3,39 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <title>Admin</title>
-</head>
-<body>
-  <h1>Live Gyro Monitor</h1>
-
-  <div style="margin-bottom: 1em;">
-    <label for="smoothing">Glättung: <span id="smooth-value">0%</span></label>
-    <input type="range" id="smoothing" min="0" max="100" value="0" />
-  </div>
-
-  <div id="game-status"></div>
-  <div id="device-list"></div>
-
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
     }
+
     .device {
       border: 1px solid #ccc;
       border-radius: 8px;
       padding: 10px;
       margin-bottom: 10px;
     }
+
     .bar {
       height: 10px;
       background: #4caf50;
       margin: 2px 0 8px;
+      transition: width 0.2s, background 0.2s;
     }
+
     .label {
       font-size: 0.9em;
       color: #555;
     }
+
+    #smoothing {
+      width: 300px;
+    }
   </style>
+</head>
+<body>
+  <h1>Live Gyro Monitor</h1>
+
+  <div style="margin-bottom: 1em;">
+    <label for="smoothing">Glättung: <span id="smooth-value">0%</span></label><br>
+    <input type="range" id="smoothing" min="0" max="100" value="0" />
+  </div>
+
+  <div id="game-status"></div>
+  <div id="device-list"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="js/admin.js"></script>
