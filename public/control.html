@@ -1,6 +1,10 @@
-<body>
-  <button id="laser-button">🎯</button>
-
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/style.css" />
   <style>
     body {
       margin: 0;
@@ -10,6 +14,7 @@
       align-items: center;
       justify-content: center;
     }
+
     #laser-button {
       width: 200px;
       height: 200px;
@@ -19,12 +24,18 @@
       background: #4caf50;
       color: white;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      touch-action: none;
     }
+
     #laser-button:active {
       background: #388e3c;
     }
   </style>
+</head>
+<body>
+  <button id="laser-button">🎯</button>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="js/control.js"></script>
 </body>
+</html>
