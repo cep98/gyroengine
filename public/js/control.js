@@ -4,33 +4,39 @@ import { socket } from "./socket.js";
 let sending = false;
 let center = { alpha: 0, beta: 0 };
 
-const button = document.getElementById("laser-button");
-
-// Gyro-Zugriff sofort beim ersten Aufruf anfordern
+// Gyro-Freigabe beim Start einholen
 (async () => {
   await requestGyroPermission();
 })();
 
-// Kalibrieren bei erstem Druck
+const button = document.getElementById("laser-button");
+
 button.addEventListener("touchstart", (e) => {
   e.preventDefault();
   sending = true;
 
-  // aktuelle Ausrichtung als Mitte definieren
   const calibrate = (e) => {
     center.alpha = e.alpha ?? 0;
     center.beta = e.beta ?? 0;
+
+    socket.emit("gyroData", {
+      alpha: center.alpha,
+      beta: center.beta,
+      gamma: 0,
+      dirX: 0,
+      dirY: 0,
+      isStart: true
+    });
+
     window.removeEventListener("deviceorientation", calibrate);
   };
   window.addEventListener("deviceorientation", calibrate);
 });
 
-// Stoppen beim Loslassen
 button.addEventListener("touchend", () => {
   sending = false;
 });
 
-// Gyro-Daten senden (nur bei sending = true)
 window.addEventListener("deviceorientation", (e) => {
   if (!sending) return;
 
@@ -44,6 +50,7 @@ window.addEventListener("deviceorientation", (e) => {
     beta: e.beta,
     gamma: e.gamma,
     dirX: delta.x,
-    dirY: delta.y
+    dirY: delta.y,
+    isStart: false
   });
 });
