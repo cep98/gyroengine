@@ -5,36 +5,35 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let center = { beta: 0, gamma: 0 };
 let pos = { x: canvas.width / 2, y: canvas.height / 2 };
-let dir = { x: 0, y: 0 };
 
-// Melde dich beim Server als "game"
 socket.emit("clientType", { type: "game" });
 
 socket.on("gyroData", (data) => {
   if (data.isStart) {
-    pos = {
-      x: canvas.width / 2,
-      y: canvas.height / 2
-    };
-  } else {
-    dir.x = data.dirX ?? 0;
-    dir.y = data.dirY ?? 0;
+    center.beta = data.beta;
+    center.gamma = data.gamma;
+    return;
   }
+
+  const betaDelta = data.beta - center.beta;   // y
+  const gammaDelta = data.gamma - center.gamma; // x
+
+  const maxAngle = 20; // ±20° → voller Ausschlag
+
+  const normX = Math.max(-1, Math.min(1, gammaDelta / maxAngle));
+  const normY = Math.max(-1, Math.min(1, betaDelta / maxAngle));
+
+  pos.x = canvas.width / 2 + normX * (canvas.width / 2);
+  pos.y = canvas.height / 2 + normY * (canvas.height / 2);
 });
 
 function draw() {
-  pos.x += dir.x * 5;
-  pos.y += dir.y * 5;
-
-  pos.x = Math.max(0, Math.min(canvas.width, pos.x));
-  pos.y = Math.max(0, Math.min(canvas.height, pos.y));
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, 20, 0, 2 * Math.PI);
   ctx.fill();
-
   requestAnimationFrame(draw);
 }
 draw();
