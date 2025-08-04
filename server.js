@@ -8,29 +8,26 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.static(path.join(__dirname, "public")));
 
-// HTTPS-Umleitung (wichtig für iOS-Gyroskop)
-app.use((req, res, next) => {
-    if (req.headers["x-forwarded-proto"] !== "https" && process.env.NODE_ENV === "production") {
-        return res.redirect(`https://${req.headers.host}${req.url}`);
-    }
-    next();
-});
-
-// Server starten
+// WebSocket-Server
 const server = app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
 });
 
-// WebSocket-Server
 const wss = new WebSocket.Server({ server });
 
 wss.on("connection", (ws) => {
+    console.log("Neuer Client verbunden (IP:", ws._socket.remoteAddress, ")");
+    
     ws.on("message", (data) => {
-        // Broadcast an alle Clients
+        console.log("Empfangene Daten:", data.toString()); // Debug-Log
+        
+        // Broadcast an ALLE Clients (inkl. Admin)
         wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
+            if (client.readyState === WebSocket.OPEN) {
                 client.send(data.toString());
             }
         });
     });
+
+    ws.on("close", () => console.log("Client getrennt"));
 });
