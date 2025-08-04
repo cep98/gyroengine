@@ -1,51 +1,49 @@
 import { requestGyroPermission } from "../lib/gyro-utils.js";
 import { socket } from "./socket.js";
 
-let listening = false;
-let center = { alpha: 0, beta: 0 }; // Kalibrierung
-let handler = null;
+let sending = false;
+let center = { alpha: 0, beta: 0 };
 
-const button = document.getElementById("toggle");
+const button = document.getElementById("laser-button");
 
-button.addEventListener("click", async () => {
-  if (!listening) {
-    await requestGyroPermission();
-    button.textContent = "Stop";
+// Gyro-Zugriff sofort beim ersten Aufruf anfordern
+(async () => {
+  await requestGyroPermission();
+})();
 
-    window.addEventListener("deviceorientation", handler = (e) => {
-      const { alpha, beta } = e;
+// Kalibrieren bei erstem Druck
+button.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  sending = true;
 
-      const delta = {
-        x: Math.sin((alpha - center.alpha) * Math.PI / 180),
-        y: -Math.sin((beta - center.beta) * Math.PI / 180)
-      };
+  // aktuelle Ausrichtung als Mitte definieren
+  const calibrate = (e) => {
+    center.alpha = e.alpha ?? 0;
+    center.beta = e.beta ?? 0;
+    window.removeEventListener("deviceorientation", calibrate);
+  };
+  window.addEventListener("deviceorientation", calibrate);
+});
 
-      socket.emit("gyroData", {
-        dirX: delta.x,
-        dirY: delta.y,
-        isStart: false
-      });
-    });
+// Stoppen beim Loslassen
+button.addEventListener("touchend", () => {
+  sending = false;
+});
 
-    // Kalibrierung senden
-    window.addEventListener("deviceorientation", function calibrate(e) {
-      center.alpha = e.alpha ?? 0;
-      center.beta = e.beta ?? 0;
+// Gyro-Daten senden (nur bei sending = true)
+window.addEventListener("deviceorientation", (e) => {
+  if (!sending) return;
 
-      socket.emit("gyroData", {
-        dirX: 0,
-        dirY: 0,
-        isStart: true // Signal für Zentrierung im game
-      });
+  const delta = {
+    x: Math.sin((e.alpha - center.alpha) * Math.PI / 180),
+    y: -Math.sin((e.beta - center.beta) * Math.PI / 180)
+  };
 
-      window.removeEventListener("deviceorientation", calibrate);
-    });
-
-    listening = true;
-  } else {
-    window.removeEventListener("deviceorientation", handler);
-    handler = null;
-    button.textContent = "Start";
-    listening = false;
-  }
+  socket.emit("gyroData", {
+    alpha: e.alpha,
+    beta: e.beta,
+    gamma: e.gamma,
+    dirX: delta.x,
+    dirY: delta.y
+  });
 });
