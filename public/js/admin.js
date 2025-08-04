@@ -1,7 +1,10 @@
 import { socket } from "./socket.js";
 
 const container = document.getElementById("device-list");
+const gameStatus = document.getElementById("game-status");
+
 const devices = {};
+const gameClients = new Set();
 
 function createDeviceBlock(id) {
   const block = document.createElement("div");
@@ -25,6 +28,22 @@ function updateBar(id, type, value) {
   bar.style.width = `${Math.min(Math.abs(value), 180)}px`;
   bar.style.background = value > 0 ? "#4caf50" : "#f44336";
 }
+
+function renderGameList() {
+  let output = "<h3>Verbundene game.html:</h3><ul>";
+  for (const id of gameClients) {
+    output += `<li>${id}</li>`;
+  }
+  output += "</ul>";
+  gameStatus.innerHTML = output;
+}
+
+socket.on("clientType", (data) => {
+  if (data.type === "game") {
+    gameClients.add(data.id);
+    renderGameList();
+  }
+});
 
 socket.on("gyroData", (data) => {
   const id = data.id;
