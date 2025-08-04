@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+button {
+  padding: 1em;
+  font-size: 1rem;
+}
