@@ -32,10 +32,11 @@ function createDeviceBlock(id) {
 }
 
 function updateBar(id, type, value) {
-  document.getElementById(`${type}-${id}`).textContent = value.toFixed(1);
+  const displayValue = typeof value === "number" ? value : 0;
+  document.getElementById(`${type}-${id}`).textContent = displayValue.toFixed(1);
   const bar = document.getElementById(`bar-${type}-${id}`);
-  bar.style.width = `${Math.min(Math.abs(value), 180)}px`;
-  bar.style.background = value > 0 ? "#4caf50" : "#f44336";
+  bar.style.width = `${Math.min(Math.abs(displayValue), 180)}px`;
+  bar.style.background = displayValue > 0 ? "#4caf50" : "#f44336";
 }
 
 function renderGameList() {
@@ -58,7 +59,7 @@ socket.on("gyroData", (data) => {
   const id = data.id;
   if (!devices[id]) createDeviceBlock(id);
 
-  updateBar(id, "alpha", data.alpha || 0);
-  updateBar(id, "beta", data.beta || 0);
-  updateBar(id, "gamma", data.gamma || 0);
+  updateBar(id, "alpha", data.alpha);
+  updateBar(id, "beta", data.beta);
+  updateBar(id, "gamma", data.gamma);
 });
