@@ -1,36 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Laserpointer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laserpointer Game</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #f0f0f0; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #222;
+            font-family: Arial, sans-serif;
+        }
         #pointer {
-            width: 20px; height: 20px; background: red;
-            border-radius: 50%; position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            transition: transform 0.2s ease-out;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, red 20%, rgba(255,0,0,0.3) 70%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px red;
+            transition: transform 0.1s linear;
+            pointer-events: none;
+        }
+        #debug {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #calibrationMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50px);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
     </style>
 </head>
 <body>
     <div id="pointer"></div>
+    <div id="debug">Verbindung wird hergestellt...</div>
+    <div id="calibrationMessage">Kalibrierung aktiviert</div>
 
     <script>
+        // Elemente
         const pointer = document.getElementById("pointer");
-        const socket = new WebSocket("wss://gyroengine.onrender.com");  // 👈 URL angepasst
+        const debugDiv = document.getElementById("debug");
+        const calibrationMsg = document.getElementById("calibrationMessage");
 
-        socket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.reset) {
-                // Zurück zur Mitte
-                pointer.style.transform = "translate(-50%, -50%)";
-            } else {
-                // Bewegung
-                const x = (data.gamma * 10) + window.innerWidth / 2;
-                const y = (data.beta * 5) + window.innerHeight / 2;
-                pointer.style.transform = `translate(${x - window.innerWidth/2}px, ${y - window.innerHeight/2}px)`;
+        // WebSocket-Verbindung
+        const socket = new WebSocket("wss://gyroengine.onrender.com");
+
+        // Einstellungen
+        const settings = {
+            sensitivity: 3,       // Empfindlichkeit (höher = stärkere Bewegung)
+            smoothness: 0.2,       // Glättung (0 = keine, 1 = maximale Glättung)
+            autoCenter: true       // Automatische Kalibrierung bei Verbindung
+        };
+
+        // Zustandsvariablen
+        let targetX = 0, targetY = 0;
+        let currentX = 0, currentY = 0;
+        let isConnected = false;
+
+        // WebSocket-Events
+        socket.onopen = () => {
+            isConnected = true;
+            debugDiv.textContent = "Verbunden mit Server";
+            if (settings.autoCenter) showCalibrationMessage();
+        };
+
+        socket.onerror = (error) => {
+            debugDiv.textContent = `Fehler: ${error.message || "Unbekannter Fehler"}`;
+        };
+
+        socket.onclose = () => {
+            isConnected = false;
+            debugDiv.textContent = "Verbindung getrennt";
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                // Reset-Kommando (Kalibrierung)
+                if (data.reset) {
+                    targetX = 0;
+                    targetY = 0;
+                    showCalibrationMessage();
+                }
+                // Gyroskop-Daten
+                else if (data.beta !== undefined && data.gamma !== undefined) {
+                    // Empfindlichkeit anpassen
+                    targetX = data.gamma * settings.sensitivity;
+                    targetY = data.beta * settings.sensitivity * 0.8; // Y-Achse weniger sensitiv
+                    
+                    // Debug-Info
+                    debugDiv.innerHTML = `
+                        Beta: ${data.beta.toFixed(1)}°<br>
+                        Gamma: ${data.gamma.toFixed(1)}°<br>
+                        Position: X=${targetX.toFixed(1)}, Y=${targetY.toFixed(1)}
+                    `;
+                }
+            } catch (error) {
+                console.error("Datenverarbeitungsfehler:", error);
             }
         };
+
+        // Animation (Glättung)
+        function animate() {
+            // Glättung berechnen
+            currentX += (targetX - currentX) * settings.smoothness;
+            currentY += (targetY - currentY) * settings.smoothness;
+            
+            // Pointer bewegen
+            pointer.style.transform = `
+                translate(calc(-50% + ${currentX}px), 
+                calc(-50% + ${currentY}px))
+            `;
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Kalibrierungs-Nachricht anzeigen
+        function showCalibrationMessage() {
+            calibrationMsg.style.opacity = 1;
+            setTimeout(() => {
+                calibrationMsg.style.opacity = 0;
+            }, 2000);
+        }
+
+        // Fenstergrößenänderung berücksichtigen
+        window.addEventListener('resize', () => {
+            targetX = 0;
+            targetY = 0;
+        });
     </script>
 </body>
 </html>
