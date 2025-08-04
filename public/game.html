@@ -1,9 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Laserpointer</title>
+    <title>Laserpointer Game</title>
     <style>
-        /* CSS unverändert */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+        }
+        #pointer {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, red 20%, rgba(255,50,50,0.3) 70%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 10px red);
+            will-change: transform;
+        }
+        #debug {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -19,12 +46,9 @@
         const MAX_ANGLE = 20;
         let targetX = 0, targetY = 0;
         let currentX = 0, currentY = 0;
+        let sensitivity = window.innerWidth / (MAX_ANGLE * 2);
 
-        function calculateSensitivity() {
-            return Math.min(window.innerWidth, window.innerHeight) / (MAX_ANGLE * 2);
-        }
-        let sensitivity = calculateSensitivity();
-
+        // WebSocket
         socket.onopen = () => debug.textContent = "Verbunden | Warte auf Daten";
         socket.onerror = (e) => debug.textContent = `Fehler: ${e.message}`;
         
@@ -37,12 +61,14 @@
                     debug.textContent = "Zentriert | Warte auf Daten";
                 } 
                 else if (data.alpha !== undefined) {
-                    // KORREKTUR: Richtung umgekehrt (-1 für beide Achsen)
-                    let horizontalAngle = (data.alpha > 180) ? data.alpha - 360 : data.alpha;
-                    horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle)) * -1; // 👈 Hier -1
+                    // Richtungskorrektur und Begrenzung
+                    let horizontalAngle = (data.alpha > 180 ? data.alpha - 360 : data.alpha) * -1;
+                    horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle));
                     
-                    const verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, data.beta)) * -1; // 👈 Hier -1
+                    let verticalAngle = (data.beta || 0) * -1; // Fallback für beta
+                    verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, verticalAngle));
                     
+                    // Positionsberechnung
                     targetX = horizontalAngle * sensitivity;
                     targetY = verticalAngle * sensitivity * 0.8;
                     
@@ -54,20 +80,26 @@
                 }
             } catch (err) {
                 debug.textContent = `Datenfehler: ${err.message}`;
+                console.error(err);
             }
         };
 
+        // Animation (korrigiert)
         function animate() {
+            // Glättung
             currentX += (targetX - currentX) * 0.2;
             currentY += (targetY - currentY) * 0.2;
             
-            pointer.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)`;
+            // Transform anwenden (KORREKTUR: Komma durch Leerzeichen ersetzt)
+            pointer.style.transform = `translate(calc(-50% + ${currentX}px) translate(calc(-50% + ${currentY}px)`;
+            
             requestAnimationFrame(animate);
         }
         animate();
 
+        // Fenstergrößenanpassung
         window.addEventListener('resize', () => {
-            sensitivity = calculateSensitivity();
+            sensitivity = window.innerWidth / (MAX_ANGLE * 2);
         });
     </script>
 </body>
