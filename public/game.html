@@ -1,27 +1,36 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Game</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
-  </style>
+    <title>Laserpointer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #f0f0f0; }
+        #pointer {
+            width: 20px; height: 20px; background: red;
+            border-radius: 50%; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            transition: transform 0.2s ease-out;
+        }
+    </style>
 </head>
 <body>
-  <canvas id="gameCanvas"></canvas>
+    <div id="pointer"></div>
 
-  <!-- Socket.IO laden (muss VOR dem Modul erfolgen!) -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/js/game/main.js"></script>
+    <script>
+        const pointer = document.getElementById("pointer");
+        const socket = new WebSocket("wss://gyroengine.onrender.com");  // 👈 URL angepasst
+
+        socket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.reset) {
+                // Zurück zur Mitte
+                pointer.style.transform = "translate(-50%, -50%)";
+            } else {
+                // Bewegung
+                const x = (data.gamma * 10) + window.innerWidth / 2;
+                const y = (data.beta * 5) + window.innerHeight / 2;
+                pointer.style.transform = `translate(${x - window.innerWidth/2}px, ${y - window.innerHeight/2}px)`;
+            }
+        };
+    </script>
 </body>
 </html>
