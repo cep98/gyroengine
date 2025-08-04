@@ -8,7 +8,6 @@ const smoothingLabel = document.getElementById("smoothing-label");
 const devices = {};
 const gameClients = new Set();
 
-// Glättungsregler
 smoothingSlider.addEventListener("input", () => {
   const percent = Number(smoothingSlider.value);
   smoothingLabel.textContent = percent + "%";
