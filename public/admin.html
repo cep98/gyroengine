@@ -6,6 +6,12 @@
 </head>
 <body>
   <h1>Live Gyro Monitor</h1>
+
+  <div style="margin-bottom: 1em;">
+    <label for="smoothing">Glättung: <span id="smooth-value">0%</span></label>
+    <input type="range" id="smoothing" min="0" max="100" value="0" />
+  </div>
+
   <div id="game-status"></div>
   <div id="device-list"></div>
 
