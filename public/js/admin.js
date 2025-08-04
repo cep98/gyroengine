@@ -30,4 +30,7 @@ socket.on("gyroData", (data) => {
   const id = data.id;
   if (!devices[id]) createDeviceBlock(id);
 
-  updateBar(id, "alpha", data.alph
+  updateBar(id, "alpha", data.alpha || 0);
+  updateBar(id, "beta", data.beta || 0);
+  updateBar(id, "gamma", data.gamma || 0);
+});
