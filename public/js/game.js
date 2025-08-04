@@ -9,14 +9,13 @@ let center = { alpha: 0, beta: 0 };
 let target = { x: canvas.width / 2, y: canvas.height / 2 };
 let pos = { x: target.x, y: target.y };
 
-let smoothingFactor = 0; // 0–1
+let smoothingFactor = 0; // 0 = keine Glättung, 1 = volle Glättung
 
-// Empfange Smoothing-Wert vom Admin
+socket.emit("clientType", { type: "game" });
+
 socket.on("smoothing", (value) => {
   smoothingFactor = Math.max(0, Math.min(1, value));
 });
-
-socket.emit("clientType", { type: "game" });
 
 socket.on("gyroData", (data) => {
   if (data.isStart) {
@@ -30,8 +29,8 @@ socket.on("gyroData", (data) => {
 
   const maxAngle = 20;
 
-  const normX = Math.max(-1, Math.min(1, -alphaDelta / maxAngle)); // Invertiertes alpha
-  const normY = Math.max(-1, Math.min(1, -betaDelta / maxAngle)); // Invertiertes beta
+  const normX = Math.max(-1, Math.min(1, -alphaDelta / maxAngle)); // Invertiert
+  const normY = Math.max(-1, Math.min(1, -betaDelta / maxAngle)); // Invertiert
 
   target.x = canvas.width / 2 + normX * (canvas.width / 2);
   target.y = canvas.height / 2 + normY * (canvas.height / 2);
