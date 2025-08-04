@@ -51,3 +51,4 @@ button.addEventListener("touchend", (e) => {
 });
 
 window.addEventListener("deviceorientation", sendGyro);
+
