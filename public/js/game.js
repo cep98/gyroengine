@@ -5,25 +5,25 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let center = { beta: 0, gamma: 0 };
+let center = { alpha: 0, beta: 0 };
 let pos = { x: canvas.width / 2, y: canvas.height / 2 };
 
 socket.emit("clientType", { type: "game" });
 
 socket.on("gyroData", (data) => {
   if (data.isStart) {
+    center.alpha = data.alpha;
     center.beta = data.beta;
-    center.gamma = data.gamma;
     return;
   }
 
-  const betaDelta = data.beta - center.beta;   // y
-  const gammaDelta = data.gamma - center.gamma; // x
+  const alphaDelta = ((data.alpha - center.alpha + 540) % 360) - 180; // korrekt normieren auf -180..+180
+  const betaDelta = data.beta - center.beta;
 
-  const maxAngle = 20; // ±20° → voller Ausschlag
+  const maxAngle = 20; // ±20° = voller Ausschlag
 
-  const normX = Math.max(-1, Math.min(1, gammaDelta / maxAngle));
-  const normY = Math.max(-1, Math.min(1, betaDelta / maxAngle));
+  const normX = Math.max(-1, Math.min(1, alphaDelta / maxAngle));
+  const normY = Math.max(-1, Math.min(1, -betaDelta / maxAngle)); // invertiertes beta
 
   pos.x = canvas.width / 2 + normX * (canvas.width / 2);
   pos.y = canvas.height / 2 + normY * (canvas.height / 2);
