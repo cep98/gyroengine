@@ -1,16 +1,25 @@
+import { socket } from "./socket.js";
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
 let pos = { x: canvas.width / 2, y: canvas.height / 2 };
 let dir = { x: 0, y: 0 };
 
+// Melde dich beim Server als "game"
+socket.emit("clientType", { type: "game" });
+
 socket.on("gyroData", (data) => {
   if (data.isStart) {
-    // Kalibrierung: Punkt in Mitte setzen
     pos = {
       x: canvas.width / 2,
       y: canvas.height / 2
     };
   } else {
-    dir.x = data.dirX || 0;
-    dir.y = data.dirY || 0;
+    dir.x = data.dirX ?? 0;
+    dir.y = data.dirY ?? 0;
   }
 });
 
