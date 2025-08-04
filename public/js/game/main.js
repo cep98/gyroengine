@@ -1,3 +1,6 @@
+console.log("main.js geladen");
+
+
 import { socket } from "../socket.js";
 import { calibrate, computeNormalizedPosition } from "./position.js";
 import { smooth } from "./smoothing.js";
