@@ -2,17 +2,15 @@ import { socket } from "./socket.js";
 
 const container = document.getElementById("device-list");
 const gameStatus = document.getElementById("game-status");
-const smoothingSlider = document.getElementById("smoothing");
+const smoothingSlider = document.getElementById("smoothing-slider");
 const smoothingLabel = document.getElementById("smooth-value");
 
 const devices = {};
 const gameClients = new Set();
 
 smoothingSlider.addEventListener("input", () => {
-  const percent = Number(smoothingSlider.value);
-  smoothingLabel.textContent = percent + "%";
-  const factor = percent / 100;
-  socket.emit("smoothing", factor);
+  const value = parseInt(smoothingSlider.value, 10);
+  socket.emit("updateConfig", { smoothing: value });
 });
 
 function createDeviceBlock(id) {
