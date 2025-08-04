@@ -1,42 +1,61 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Control</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="css/style.css" />
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: #f0f0f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #laser-button {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      font-size: 3rem;
-      border: none;
-      background: #4caf50;
-      color: white;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      touch-action: none;
-    }
-
-    #laser-button:active {
-      background: #388e3c;
-    }
-  </style>
+    <title>Gyro Controller</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; touch-action: none; }
+        #data { margin-top: 20px; color: #666; }
+        #activateButton {
+            width: 150px; height: 150px; border-radius: 50%;
+            background: #4CAF50; color: white; font-size: 18px;
+            border: none; margin: 30px auto; display: block;
+        }
+    </style>
 </head>
 <body>
-  <button id="laser-button">🎯</button>
+    <h1>Gyro Controller</h1>
+    <p>Halte den Button gedrückt, um den Laserpointer zu steuern.</p>
+    <button id="activateButton">DRÜCKEN & HALTEN</button>
+    <div id="data">Gyroskop wird geladen...</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="js/control.js"></script>
+    <script>
+        const socket = new WebSocket("wss://gyroengine.onrender.com");  // 👈 URL angepasst
+        let isButtonPressed = false;
+
+        // Gyroskop-Freigabe (iOS)
+        function requestGyroPermission() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            startGyro();
+                            document.getElementById("data").textContent = "Gyroskop aktiviert!";
+                        }
+                    });
+            } else {
+                startGyro(); // Android/Desktop
+            }
+        }
+
+        // Gyroskop starten
+        function startGyro() {
+            window.addEventListener("deviceorientation", (e) => {
+                if (isButtonPressed && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ beta: e.beta, gamma: e.gamma }));
+                }
+            });
+        }
+
+        // Button-Events
+        const button = document.getElementById("activateButton");
+        button.addEventListener("mousedown touchstart", () => isButtonPressed = true);
+        button.addEventListener("mouseup touchend", () => {
+            isButtonPressed = false;
+            socket.send(JSON.stringify({ reset: true })); // Kalibrierung
+        });
+
+        // Initiale Freigabe anfordern
+        requestGyroPermission();
+    </script>
 </body>
 </html>
-
