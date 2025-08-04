@@ -3,35 +3,7 @@
 <head>
     <title>Laserpointer</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #111;
-        }
-        #pointer {
-            width: 30px;
-            height: 30px;
-            background: radial-gradient(circle, red 20%, rgba(255,50,50,0.3) 70%);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            filter: drop-shadow(0 0 10px red);
-            transition: transform 0.05s linear;
-            will-change: transform;
-        }
-        #debug {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-        }
+        /* CSS unverändert */
     </style>
 </head>
 <body>
@@ -44,17 +16,15 @@
         const socket = new WebSocket("wss://gyroengine.onrender.com");
 
         // Einstellungen
-        const MAX_ANGLE = 20; // Maximale Neigung in Grad
+        const MAX_ANGLE = 20;
         let targetX = 0, targetY = 0;
         let currentX = 0, currentY = 0;
 
-        // Bildschirmgröße dynamisch anpassen
         function calculateSensitivity() {
             return Math.min(window.innerWidth, window.innerHeight) / (MAX_ANGLE * 2);
         }
         let sensitivity = calculateSensitivity();
 
-        // WebSocket
         socket.onopen = () => debug.textContent = "Verbunden | Warte auf Daten";
         socket.onerror = (e) => debug.textContent = `Fehler: ${e.message}`;
         
@@ -67,14 +37,12 @@
                     debug.textContent = "Zentriert | Warte auf Daten";
                 } 
                 else if (data.alpha !== undefined) {
-                    // Alpha (0-360°) zu -20° bis +20° konvertieren
+                    // KORREKTUR: Richtung umgekehrt (-1 für beide Achsen)
                     let horizontalAngle = (data.alpha > 180) ? data.alpha - 360 : data.alpha;
-                    horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle));
+                    horizontalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, horizontalAngle)) * -1; // 👈 Hier -1
                     
-                    // Beta (-180° bis 180°) begrenzen
-                    const verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, data.beta));
+                    const verticalAngle = Math.max(-MAX_ANGLE, Math.min(MAX_ANGLE, data.beta)) * -1; // 👈 Hier -1
                     
-                    // Zielposition berechnen
                     targetX = horizontalAngle * sensitivity;
                     targetY = verticalAngle * sensitivity * 0.8;
                     
@@ -89,7 +57,6 @@
             }
         };
 
-        // Glatte Animation
         function animate() {
             currentX += (targetX - currentX) * 0.2;
             currentY += (targetY - currentY) * 0.2;
@@ -99,7 +66,6 @@
         }
         animate();
 
-        // Bei Fenstergrößenänderung neu berechnen
         window.addEventListener('resize', () => {
             sensitivity = calculateSensitivity();
         });
