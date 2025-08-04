@@ -1,6 +1,3 @@
-console.log("main.js geladen");
-
-
 import { socket } from "../socket.js";
 import { calibrate, computeNormalizedPosition } from "./position.js";
 import { smooth } from "./smoothing.js";
@@ -17,8 +14,11 @@ let smoothingFactor = 0;
 
 socket.emit("clientType", { type: "game" });
 
-socket.on("smoothing", (value) => {
-  smoothingFactor = Math.max(0, Math.min(1, value));
+socket.on("updateConfig", (config) => {
+  if (config.smoothing !== undefined) {
+    smoothingFactor = Math.max(0, Math.min(1, config.smoothing / 100));
+    console.log("Neuer Glättungsfaktor:", smoothingFactor);
+  }
 });
 
 socket.on("gyroData", (data) => {
@@ -31,9 +31,15 @@ socket.on("gyroData", (data) => {
 });
 
 function draw() {
-  pos = smooth(pos, target, smoothingFactor);
+  if (smoothingFactor <= 0) {
+    pos = { ...target };
+  } else {
+    pos = smooth(pos, target, smoothingFactor);
+  }
+
   clearCanvas(ctx, canvas);
   drawPointer(ctx, pos);
   requestAnimationFrame(draw);
 }
+
 draw();
