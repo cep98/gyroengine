@@ -7,14 +7,6 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 
-// HTTPS-Umleitung (für iOS Gyro)
-app.use((req, res, next) => {
-    if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
-        return res.redirect(`https://${req.headers.host}${req.url}`);
-    }
-    next();
-});
-
 // Server starten
 const server = app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
@@ -40,9 +32,4 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => console.log('Client getrennt'));
-});
-
-// Fehlerbehandlung
-process.on('uncaughtException', (err) => {
-    console.error('Kritischer Fehler:', err);
 });
