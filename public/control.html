@@ -3,24 +3,50 @@
 <head>
     <title>Gyro Controller</title>
     <style>
-        body { font-family: Arial; text-align: center; padding: 20px; touch-action: none; }
-        #data { margin-top: 20px; color: #666; }
-        #activateButton {
-            width: 150px; height: 150px; border-radius: 50%;
-            background: #4CAF50; color: white; font-size: 18px;
-            border: none; margin: 30px auto; display: block;
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 20px;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #data {
+            margin-top: 20px;
+            color: #666;
+        }
+        #activateArea {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #4CAF50;
+            color: white;
+            font-size: 18px;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #activateArea:active {
+            background: #45a049;
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
     <h1>Gyro Controller</h1>
-    <p>Halte den Button gedrückt, um den Laserpointer zu steuern.</p>
-    <button id="activateButton">DRÜCKEN & HALTEN</button>
-    <div id="data">Gyroskop wird geladen...</div>
+    <p>Halte den Kreis gedrückt, um den Laserpointer zu steuern</p>
+    
+    <div id="activateArea">DRÜCKEN & HALTEN</div>
+    <div id="data">Gyroskop wird initialisiert...</div>
 
     <script>
-        const socket = new WebSocket("wss://gyroengine.onrender.com");  // 👈 URL angepasst
+        const socket = new WebSocket("wss://gyroengine.onrender.com");
+        const activateArea = document.getElementById("activateArea");
+        const dataDiv = document.getElementById("data");
         let isButtonPressed = false;
+        let isGyroReady = false;
 
         // Gyroskop-Freigabe (iOS)
         function requestGyroPermission() {
@@ -29,11 +55,14 @@
                     .then(response => {
                         if (response === 'granted') {
                             startGyro();
-                            document.getElementById("data").textContent = "Gyroskop aktiviert!";
+                            dataDiv.textContent = "Bewege dein Handy!";
+                        } else {
+                            dataDiv.textContent = "Gyroskop blockiert - Bitte erlauben";
                         }
-                    });
+                    })
+                    .catch(console.error);
             } else {
-                startGyro(); // Android/Desktop
+                startGyro();
             }
         }
 
@@ -41,21 +70,36 @@
         function startGyro() {
             window.addEventListener("deviceorientation", (e) => {
                 if (isButtonPressed && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ beta: e.beta, gamma: e.gamma }));
+                    const data = {
+                        beta: e.beta,
+                        gamma: e.gamma,
+                        timestamp: Date.now()
+                    };
+                    socket.send(JSON.stringify(data));
                 }
             });
+            isGyroReady = true;
         }
 
-        // Button-Events
-        const button = document.getElementById("activateButton");
-        button.addEventListener("mousedown touchstart", () => isButtonPressed = true);
-        button.addEventListener("mouseup touchend", () => {
-            isButtonPressed = false;
-            socket.send(JSON.stringify({ reset: true })); // Kalibrierung
-        });
+        // Touch/Maus-Events
+        activateArea.addEventListener("mousedown", startPress);
+        activateArea.addEventListener("mouseup", endPress);
+        activateArea.addEventListener("touchstart", startPress, {passive: true});
+        activateArea.addEventListener("touchend", endPress);
 
-        // Initiale Freigabe anfordern
-        requestGyroPermission();
+        function startPress() {
+            isButtonPressed = true;
+            if (!isGyroReady) requestGyroPermission();
+        }
+
+        function endPress() {
+            isButtonPressed = false;
+            socket.send(JSON.stringify({ reset: true }));
+        }
+
+        // Verbindungsstatus
+        socket.onopen = () => dataDiv.textContent = "Bereit - Halte den Kreis gedrückt";
+        socket.onerror = () => dataDiv.textContent = "Verbindungsfehler!";
     </script>
 </body>
 </html>
