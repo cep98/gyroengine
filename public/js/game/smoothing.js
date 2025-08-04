@@ -1,6 +1,7 @@
-export function smooth(current, target, factor) {
+export function smoothPosition(current, target, factor) {
+  if (factor <= 0) return { ...target };
   return {
-    x: current.x * (1 - factor) + target.x * factor,
-    y: current.y * (1 - factor) + target.y * factor
+    x: current.x + (target.x - current.x) * factor,
+    y: current.y + (target.y - current.y) * factor,
   };
 }
