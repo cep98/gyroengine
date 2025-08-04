@@ -24,7 +24,7 @@ const server = app.listen(PORT, () => {
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
-    console.log('Neuer Client verbunden');
+    console.log('Neue Client-Verbindung');
 
     ws.on('message', (data) => {
         try {
@@ -40,4 +40,9 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => console.log('Client getrennt'));
+});
+
+// Fehlerbehandlung
+process.on('uncaughtException', (err) => {
+    console.error('Kritischer Fehler:', err);
 });
