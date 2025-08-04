@@ -1,10 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Admin</title></head>
 <body>
-  <h1>Empfangene Gyro-Daten</h1>
-  <div id="gyro-output"></div>
+  <h1>Live Gyro Monitor</h1>
+  <div id="device-list"></div>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    .device {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .bar {
+      height: 10px;
+      background: #4caf50;
+      margin: 2px 0 8px;
+    }
+    .label {
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="js/admin.js"></script>
 </body>
-</html>
