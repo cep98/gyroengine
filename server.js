@@ -1,38 +1,43 @@
-const express = require("express");
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
+const server = http.createServer(app);
+const io = new Server(server);
 
-// Statische Dateien aus dem public-Ordner bereitstellen
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
-// WebSocket-Verbindung
+const clients = new Map();
+
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-
-  // Gyro-Daten empfangen und an alle Clients weiterleiten
-  socket.on("gyroData", (data) => {
-    io.emit("gyroData", { id: socket.id, ...data });
-  });
-
-  // Empfangen von clientType ("game", "control", etc.)
-  socket.on("clientType", (data) => {
-    data.id = socket.id;
-    io.emit("clientType", data);
-  });
-
-  // Empfangen und Weiterleiten des Glättungswerts (0.0 – 1.0)
-  socket.on("smoothing", (value) => {
-    io.emit("smoothing", value);
-  });
+  console.log("🟢 Verbunden:", socket.id);
+  clients.set(socket.id, { id: socket.id });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log("🔴 Getrennt:", socket.id);
+    clients.delete(socket.id);
+  });
+
+  socket.on("clientType", (data) => {
+    io.emit("clientType", { id: socket.id, type: data.type });
+  });
+
+  socket.on("gyroData", (data) => {
+    io.emit("gyroData", { ...data, id: socket.id });
+  });
+
+  socket.on("updateConfig", (data) => {
+    io.emit("updateConfig", data);
   });
 });
 
-// Server starten
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`Server läuft auf http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`🚀 Server läuft auf http://localhost:${PORT}`);
 });
